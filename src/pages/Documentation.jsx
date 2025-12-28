@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { FileText, Download, Copy, Check, Sparkles, Search, Calendar, User, Home, Zap, ExternalLink, BookOpen, BarChart3, Users, Activity, Settings, LogOut } from 'lucide-react';
+import { useGenerateDocument } from '../hooks/useEdgeFunctions';
+import { supabase } from '../services/supabase';
 
 const Documentation = ({ session, onNavigate, onSignOut }) => {
   const [selectedDoc, setSelectedDoc] = useState(null);
@@ -7,42 +9,101 @@ const Documentation = ({ session, onNavigate, onSignOut }) => {
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [generatorData, setGeneratorData] = useState({
-    type: 'prd',
-    input: '',
-    tone: 'professional',
-    length: 'detailed',
-    includeStories: true,
-    includeCriteria: true,
-    includeMockups: false,
-    saveLocation: 'notion'
-  });
+  const [workspaceId, setWorkspaceId] = useState(null);
 
-  const documents = [
-    { id: 1, title: 'User Dashboard v2 - PRD', type: 'prd', created: '2024-12-01', author: 'AI Generator', status: 'Published', notionUrl: 'https://notion.so/...', preview: 'Product Requirements Document for the new user dashboard featuring customizable widgets...' },
-    { id: 2, title: 'Authentication System - Technical Spec', type: 'tech_spec', created: '2024-11-28', author: 'AI Generator', status: 'Draft', preview: 'Technical specification for implementing OAuth 2.0 authentication with JWT tokens...' },
-    { id: 3, title: 'Sprint 23 Summary', type: 'sprint_summary', created: '2024-11-25', author: 'AI Generator', status: 'Published', notionUrl: 'https://notion.so/...', preview: 'Weekly sprint summary covering 23 completed tasks, 3 blockers...' },
-    { id: 4, title: 'v2.1.0 Release Notes', type: 'release_notes', created: '2024-11-20', author: 'AI Generator', status: 'Published', preview: 'Release notes for version 2.1.0 including new features, bug fixes...' }
-  ];
+  useEffect(() => {
+    const loadWorkspace = async () => {
+      if (session?.user) {
+        // Get the workspace ID from the database
+        const { data } = await supabase
+          .from('workspaces')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        if (data) {
+          setWorkspaceId(data.id);
+        } else {
+          // Create workspace if it doesn't exist
+          const { data: newWorkspace } = await supabase
+            .from('workspaces')
+            .insert({
+              user_id: session.user.id,
+              name: 'My Workspace',
+              settings: {}
+            })
+            .select('id')
+            .single();
+          
+          if (newWorkspace) {
+            setWorkspaceId(newWorkspace.id);
+          }
+        }
+      }
+    };
+    
+    loadWorkspace();
+  }, [session]);
 
-  const docTypes = [
-    { value: 'prd', label: 'PRD', icon: '📋', color: '#1E90FF' },
-    { value: 'tech_spec', label: 'Tech Spec', icon: '🔧', color: '#7B2CBF' },
-    { value: 'sprint_summary', label: 'Sprint Summary', icon: '📊', color: '#FF6B35' },
-    { value: 'release_notes', label: 'Release Notes', icon: '🚀', color: '#48BB78' }
-  ];
+  const generateDoc = useGenerateDocument();
 
-  const navItems = [
-    { icon: Home, label: 'Dashboard', value: 'dashboard' },
-    { icon: Zap, label: 'Automations', value: 'automations' },
-    { icon: ExternalLink, label: 'Integrations', value: 'integrations' },
-    { icon: BookOpen, label: 'Documentation', value: 'documentation', active: true },
-    { icon: BarChart3, label: 'Analytics', value: 'analytics' },
-    { icon: Users, label: 'Team', value: 'team' },
-    { icon: Activity, label: 'Usage', value: 'usage' },
-    { icon: Settings, label: 'Settings', value: 'settings' }
-  ];
+  const handleGenerate = async () => {
+    if (!workspaceId) {
+      alert('Please wait, loading workspace...');
+      return;
+    }
+  
+    try {
+      const result = await generateDoc.mutateAsync({
+        type: generatorData.type,
+        input: generatorData.input,
+        workspaceId: workspaceId,
+        tone: generatorData.tone || 'professional',
+        length: generatorData.length || 'detailed',
+      });
+  
+      console.log('Generated document:', result);
+      alert(`Document "${result.document.title}" created successfully!`);
+      setShowGenerator(false);
+      
+      // Reload documents list
+      loadDocuments();
+    } catch (error) {
+      console.error('Error generating document:', error);
+      alert('Failed to generate document: ' + error.message);
+    }
+  };
 
+  const loadDocuments = async () => {
+    if (!workspaceId) return;
+    
+    const { data, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false });
+    
+    if (data) {
+      // Transform the data to match your UI format
+      const transformedDocs = data.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        type: doc.type,
+        created: new Date(doc.created_at).toLocaleDateString(),
+        author: 'AI Generator',
+        status: doc.status === 'draft' ? 'Draft' : 'Published',
+        preview: doc.content.substring(0, 150) + '...',
+      }));
+      
+      setDocuments(transformedDocs);
+    }
+  };
+  
+  // Call this in useEffect
+  useEffect(() => {
+    loadDocuments();
+  }, [workspaceId]);
+  
   const filteredDocs = documents.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'all' || doc.type === filterType;
