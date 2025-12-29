@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
-import { supabase } from '../services/supabase';
+import React, { useState, useEffect } from 'react';
+import { supabase, db } from '../services/supabase';
 import Sidebar from '../components/Sidebar';
+import NotionSyncConfig from '../components/NotionSyncConfig';
+import { connectNotion, disconnectNotion } from '../lib/api/api-supabase-functions';
 import '../styles/Settings.css';
 
 const Settings = ({ session, onNavigate, onSignOut }) => {
   const [activeTab, setActiveTab] = useState('profile');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [workspaceId, setWorkspaceId] = useState(null);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(true);
+  const [showNotionConfig, setShowNotionConfig] = useState(false);
+  const [notionConfig, setNotionConfig] = useState(null);
 
   const [profile, setProfile] = useState({
     fullName: session?.user?.user_metadata?.full_name || '',
@@ -24,11 +30,106 @@ const Settings = ({ session, onNavigate, onSignOut }) => {
   });
 
   const [integrations, setIntegrations] = useState({
-    jira: { connected: true, workspace: 'my-company.atlassian.net' },
-    notion: { connected: true, workspace: 'My Company' },
+    jira: { connected: false, workspace: null },
+    notion: { connected: false, workspace: null },
     slack: { connected: false, workspace: null },
     github: { connected: false, workspace: null }
   });
+
+  // Load workspace and integrations on mount
+  useEffect(() => {
+    const loadData = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        // Get user's workspace
+        const { data: workspaces } = await db.getWorkspaces(session.user.id);
+        if (workspaces && workspaces.length > 0) {
+          const wsId = workspaces[0].id;
+          setWorkspaceId(wsId);
+
+          // Load integrations
+          const { data: integrationsData } = await db.getIntegrations(wsId);
+          if (integrationsData) {
+            const updatedIntegrations = { ...integrations };
+            integrationsData.forEach((integration) => {
+              if (updatedIntegrations[integration.type]) {
+                updatedIntegrations[integration.type] = {
+                  connected: integration.connected,
+                  workspace: integration.config?.workspace_name || null,
+                  config: integration.config,
+                };
+              }
+              if (integration.type === 'notion') {
+                setNotionConfig(integration.config);
+              }
+            });
+            setIntegrations(updatedIntegrations);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading integrations:', error);
+      } finally {
+        setLoadingIntegrations(false);
+      }
+    };
+
+    loadData();
+  }, [session?.user?.id]);
+
+  const [connectingNotion, setConnectingNotion] = useState(false);
+
+  const handleNotionConnect = async () => {
+    if (!workspaceId) {
+      setMessage({ type: 'error', text: 'No workspace found. Please refresh the page.' });
+      return;
+    }
+
+    try {
+      setConnectingNotion(true);
+      const result = await connectNotion(workspaceId);
+
+      if (result.success) {
+        setIntegrations((prev) => ({
+          ...prev,
+          notion: {
+            connected: true,
+            workspace: result.workspaceName,
+          },
+        }));
+        setMessage({ type: 'success', text: 'Notion connected successfully!' });
+        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error connecting to Notion:', error);
+      setMessage({ type: 'error', text: 'Failed to connect Notion. Check Edge Function secrets.' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+    } finally {
+      setConnectingNotion(false);
+    }
+  };
+
+  const handleNotionDisconnect = async () => {
+    if (!workspaceId) return;
+
+    try {
+      await disconnectNotion(workspaceId);
+      setIntegrations((prev) => ({
+        ...prev,
+        notion: { connected: false, workspace: null },
+      }));
+      setNotionConfig(null);
+      setMessage({ type: 'success', text: 'Notion disconnected.' });
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    } catch (error) {
+      console.error('Error disconnecting Notion:', error);
+      setMessage({ type: 'error', text: 'Failed to disconnect Notion.' });
+    }
+  };
+
+  const handleNotionConfigure = () => {
+    setShowNotionConfig(true);
+  };
 
   const handleProfileSave = async () => {
     setSaving(true);
@@ -219,11 +320,17 @@ const Settings = ({ session, onNavigate, onSignOut }) => {
                     <div className="integration-actions">
                       {integrations.notion.connected ? (
                         <>
-                          <button className="btn btn-ghost btn-sm">Configure</button>
-                          <button className="btn btn-secondary btn-sm">Disconnect</button>
+                          <button className="btn btn-ghost btn-sm" onClick={handleNotionConfigure}>Configure</button>
+                          <button className="btn btn-secondary btn-sm" onClick={handleNotionDisconnect}>Disconnect</button>
                         </>
                       ) : (
-                        <button className="btn btn-primary btn-sm">Connect</button>
+                        <button
+                          className="btn btn-primary btn-sm"
+                          onClick={handleNotionConnect}
+                          disabled={connectingNotion}
+                        >
+                          {connectingNotion ? 'Connecting...' : 'Connect'}
+                        </button>
                       )}
                     </div>
                   </div>
@@ -349,6 +456,16 @@ const Settings = ({ session, onNavigate, onSignOut }) => {
             )}
           </div>
         </div>
+
+        {/* Notion Sync Configuration Modal */}
+        {showNotionConfig && workspaceId && (
+          <NotionSyncConfig
+            workspaceId={workspaceId}
+            currentConfig={notionConfig}
+            onClose={() => setShowNotionConfig(false)}
+            onSave={(config) => setNotionConfig(config)}
+          />
+        )}
       </main>
     </div>
   );

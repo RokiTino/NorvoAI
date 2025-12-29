@@ -1,0 +1,288 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #1a1a2e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.notion-config-modal {
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h2 {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.modal-close svg {
+  width: 20px;
+  height: 20px;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.config-section {
+  margin-bottom: 28px;
+}
+
+.config-section:last-child {
+  margin-bottom: 0;
+}
+
+.config-label {
+  display: block;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.config-desc {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin: 0 0 12px;
+}
+
+.config-select {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.config-select:focus {
+  outline: none;
+  border-color: #1E90FF;
+}
+
+.config-select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+
+.config-loading {
+  padding: 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.refresh-btn {
+  margin-top: 8px;
+}
+
+.config-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #EF4444;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* Sync Direction Options */
+.sync-direction-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.direction-option {
+  display: block;
+  cursor: pointer;
+}
+
+.direction-option input {
+  display: none;
+}
+
+.direction-content {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  grid-template-rows: auto auto;
+  gap: 0 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.direction-option:hover .direction-content {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.direction-option.selected .direction-content {
+  background: rgba(30, 144, 255, 0.1);
+  border-color: #1E90FF;
+}
+
+.direction-icon {
+  grid-row: span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.direction-option.selected .direction-icon {
+  color: #1E90FF;
+}
+
+.direction-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.direction-label {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.direction-desc {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+/* Status Mapping */
+.status-mapping {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapping-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.local-status {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.mapping-arrow {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+}
+
+.notion-status-input {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.notion-status-input:focus {
+  outline: none;
+  border-color: #1E90FF;
+}
+
+/* Sync Now */
+.sync-now-btn {
+  width: 100%;
+}
+
+.sync-result {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.sync-result.success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10B981;
+}
+
+.sync-result.warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #F59E0B;
+}
+
+.sync-result p {
+  margin: 0;
+}
+
+.sync-errors {
+  margin-top: 4px !important;
+  font-size: 12px;
+  opacity: 0.8;
+}

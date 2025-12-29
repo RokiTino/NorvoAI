@@ -49,9 +49,24 @@ export interface JiraIntegrationRequest {
 }
 
 export interface NotionIntegrationRequest {
-  action: 'create_page' | 'update_page' | 'sync' | 'fetch_pages' | 'search'
+  action: 'connect' | 'fetch_databases' | 'create_page' | 'update_page' | 'sync' | 'fetch_pages' | 'search' | 'update_config' | 'disconnect'
   workspaceId: string
   data?: any
+}
+
+export interface NotionConfig {
+  database_id?: string
+  sync_direction?: 'bidirectional' | 'to_notion' | 'from_notion'
+  field_mapping?: {
+    status?: Record<string, string>
+  }
+}
+
+export interface NotionDatabase {
+  id: string
+  title: string
+  icon: string | null
+  properties: string[]
 }
 
 export interface RunAutomationRequest {
@@ -271,6 +286,87 @@ export async function fetchJiraIssues(workspaceId: string, jql?: string) {
 // ============================================
 // Notion Integration Functions
 // ============================================
+
+/**
+ * Connect Notion Internal Integration
+ */
+export async function connectNotion(workspaceId: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('notion-integration', {
+      body: {
+        action: 'connect',
+        workspaceId,
+      } as NotionIntegrationRequest,
+    })
+
+    if (error) throw error
+    return data as { success: boolean; workspaceName: string }
+  } catch (error) {
+    console.error('Error connecting to Notion:', error)
+    throw error
+  }
+}
+
+/**
+ * Fetch user's Notion databases
+ */
+export async function fetchNotionDatabases(workspaceId: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('notion-integration', {
+      body: {
+        action: 'fetch_databases',
+        workspaceId,
+      } as NotionIntegrationRequest,
+    })
+
+    if (error) throw error
+    return data as { databases: NotionDatabase[] }
+  } catch (error) {
+    console.error('Error fetching Notion databases:', error)
+    throw error
+  }
+}
+
+/**
+ * Update Notion sync configuration
+ */
+export async function updateNotionConfig(workspaceId: string, config: NotionConfig) {
+  try {
+    const { data, error } = await supabase.functions.invoke('notion-integration', {
+      body: {
+        action: 'update_config',
+        workspaceId,
+        data: config,
+      } as NotionIntegrationRequest,
+    })
+
+    if (error) throw error
+    return data as { success: boolean; config: NotionConfig }
+  } catch (error) {
+    console.error('Error updating Notion config:', error)
+    throw error
+  }
+}
+
+/**
+ * Disconnect Notion integration
+ */
+export async function disconnectNotion(workspaceId: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('notion-integration', {
+      body: {
+        action: 'disconnect',
+        workspaceId,
+      } as NotionIntegrationRequest,
+    })
+
+    if (error) throw error
+    return data as { success: boolean }
+  } catch (error) {
+    console.error('Error disconnecting Notion:', error)
+    throw error
+  }
+}
 
 /**
  * Create a Notion page

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./src/services/supabase";
-import LandingPage from "./src/pages/LandingPage"; // ✅ Changed
-import AuthPage from "./src/pages/AuthPage"; // ✅ Changed
-import Dashboard from "./src/pages/Dashboard"; // ✅ Changed
-import Automations from "./src/pages/Automations"; // ✅ Changed
-import Documentation from "./src/pages/Documentation"; // ✅ Changed
+import LandingPage from "./src/pages/LandingPage";
+import AuthPage from "./src/pages/AuthPage";
+import Dashboard from "./src/pages/Dashboard";
+import Automations from "./src/pages/Automations";
+import Documentation from "./src/pages/Documentation";
 import Settings from "./src/pages/Settings";
 import Tasks from "./src/pages/Tasks";
 
